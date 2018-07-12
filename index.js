@@ -15,8 +15,11 @@ const
   json = hasFlag('-j', '--json'),
   eachLine = hasFlag('-l', '--line'),
   fn = new Function('return ' + process.argv[process.argv.length - 1])(),
-  processText = text => {
+  processText = async text => {
     let result = fn(text)
+    if (result && result.then){
+      result = await result
+    }
     if (typeof result !== 'string'){
       result = JSON.stringify(result)
     }

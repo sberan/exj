@@ -1,7 +1,7 @@
 {
   "description": "command line utility for processing standard input using node",
   "name": "exj",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "bin": "./index.js",
   "scripts": {
     "test": "mocha **/*.spec.js"

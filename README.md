@@ -10,14 +10,18 @@ exj
        <em>exj</em> [<em>options</em>] <em>'fn'</em>
 
 <b>DESCRIPTION</b>
-       <em>Exj</em> executes the given <em>fn</em> upon the standard input. <em>Fn</em> is expected to be a
-       JavaScript function expression. 
-
-       The result of <em>fn</em> execution is printed to standard output. If the result type of
-       <em>fn</em> is a <em>string</em>, the result is printed directly to standard output.
+       <em>Exj</em> executes the given <em>fn</em> upon the standard input. <em>Fn</em> is
+       expected to be a JavaScript function expression. The result of <em>fn</em> execution
+       is printed to standard output.
+       
+       If the result type of <em>fn</em> is a <b>string</b>, the result is printed 
+       directly to standard output.
       
        Any other result type is converted to JSON using <em>JSON.stringify()</em> and 
        printed to standard output.
+
+       If the result of <em>fn</em> is a <b>Promise</b>, the promise will be resolved 
+       and the result printed according to the above rules.
 
 <b>OPTIONS</b>
        <b>-j</b>, <b>--json</b>
