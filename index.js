@@ -15,7 +15,7 @@ const
   }),
   json = hasFlag('-j', '--json'),
   eachLine = hasFlag('-l', '--line'),
-  execResult = hasFlag('-e', '--exec'),
+  execResult = hasFlag('-x', '--exec'),
   fn = new Function('return ' + process.argv[process.argv.length - 1])(),
   currentExec = Promise.resolve()
   processText = async text => {
@@ -29,7 +29,9 @@ const
           stderr && console.error(stderr)
           err ? reject(new Error('process failed: ' + result)) : resolve(stdout.trim())
         })
-      }))
+      })).catch(err => {
+        console.error(err)
+      })
       result = await currentExec
     }
     if (typeof result !== 'string'){

@@ -68,8 +68,8 @@ it('should await promises returned from the fn', async () => {
   assert.deepEqual(result.split('\n'), [ 1, 2, 3 ])
 })
 
-it('should execute the result of fn ', async () => {
-  const result = await xj('-jl', '--exec', '({a}) => `echo ${a}`')`
+it('should execute the result of fn', async () => {
+  const result = await xj('-jlx', '({a}) => `echo ${a}`')`
     { "a": 1 }
     { "a": 2 }
     { "a": 3 }
