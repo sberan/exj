@@ -7,8 +7,7 @@
          exj - node.js standard input processor
   
   <b>SYNOPSIS</b>
-         <em>exj</em> [<em>options</em>] <em>'fn'</em>
-  
+         <em>exj</em> [<em>--json</em>] [<em>--line</em>] [<em>--exec</em>] [<em>-jlx</em>] [<em>-f</em> | <em>--file</em> 'fnfile' ] ['fn']
   <b>DESCRIPTION</b>
          <em>Exj</em> executes the given <em>fn</em> upon the standard input. <em>Fn</em> is expected to
          be a JavaScript function expression. The result of <em>fn</em> execution is 
@@ -36,6 +35,9 @@
          <b>-x</b>, <b>--exec</b>
                 Execute each output line as a child process. The standard output
                 of the finished process will be written to standard out.
+
+         <b>-f</b>, <b>--file</b> <em>'fnfile'</em>
+                Read <em>fn</em> from a file, whose path is located at <em>'fnfile'</em>.
   
   <b>EXAMPLES</b>
   

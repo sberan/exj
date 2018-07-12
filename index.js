@@ -1,9 +1,26 @@
 #!/usr/bin/env node
 
+const readline = require('readline')
+const { exec } = require('child_process')
+const { readFileSync } = require('fs')
+
+function readFn ({ file, text }) {
+  const fnArg = file ? readFileSync(file).toString() : text
+  let fn
+  try {
+    fn = new Function('return ' + fnArg)()
+  } catch (_) {
+  } finally {
+    if (typeof fn !== 'function' && fnArg !== '--help') {
+      console.error(`Error: 'fn' argument "${fnArg}" did not evaluate to a JavaScript function`)
+      return
+    }
+    return fn
+  }
+}
+
 const
-  readline = require('readline'),
-  { exec } = require('child_process')
-  hasFlag = (...flags) => process.argv.some(arg => {
+  hasFlag = (...flags) => process.argv.find((arg, i) => {
     const shortArgs = arg.match(/^-([a-z]+)$/)
     if (shortArgs) {
       return flags.some(flag => {
@@ -16,7 +33,9 @@ const
   json = hasFlag('-j', '--json'),
   eachLine = hasFlag('-l', '--line'),
   execResult = hasFlag('-x', '--exec'),
-  fn = new Function('return ' + process.argv[process.argv.length - 1])(),
+  fnFileArg = hasFlag('-f', '--file'),
+  fn = readFn(fnFileArg ? { file: process.argv[process.argv.indexOf(fnFileArg) + 1]} : { text: process.argv[process.argv.length - 1] })
+  showHelp = hasFlag('--help') || !fn,
   currentExec = Promise.resolve()
   processText = async text => {
     let result = fn(text)
@@ -45,6 +64,10 @@ const
     input: process.stdin
   })
 
+if (showHelp) {
+  process.stderr.write('Usage: ' + readFileSync('./README.md').toString().replace(/<\/?(em|b|pre)>/g, '').match(/SYNOPSIS\n\s*(.*)/)[1])
+  process.exit(1)
+}
 let fullInput = ''
 
 lineReader.on('line', line => {
