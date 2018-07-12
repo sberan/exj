@@ -59,8 +59,17 @@ it('should process lines of JSON input', async () => {
   assert.deepEqual(result.split('\n'), [ 2, 3, 4 ])
 })
 
-it('should await promises returned from the ', async () => {
-  const result = await xj('-jl', '({a}) => Promise.resolve(a)')`
+it('should await promises returned from the fn', async () => {
+  const result = await xj('--json', '--line', '({a}) => Promise.resolve(a)')`
+    { "a": 1 }
+    { "a": 2 }
+    { "a": 3 }
+  `
+  assert.deepEqual(result.split('\n'), [ 1, 2, 3 ])
+})
+
+it('should execute the result of fn ', async () => {
+  const result = await xj('-jl', '--exec', '({a}) => `echo ${a}`')`
     { "a": 1 }
     { "a": 2 }
     { "a": 3 }
