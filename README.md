@@ -11,21 +11,21 @@ exj
 
 <b>DESCRIPTION</b>
        <em>Exj</em> executes the given <em>fn</em> upon the standard input. <em>Fn</em> is expected to be a
-       javascript function literal. 
+       JavaScript function expression. 
 
        The result of <em>fn</em> execution is printed to standard output. If the result type of
-       <em>fn</em> is a <em>string</em>, The result is printed directly to standard output.
+       <em>fn</em> is a <em>string</em>, the result is printed directly to standard output.
       
-       Any other result type is converted to JSON using <em>JSON.stringify</em> and 
+       Any other result type is converted to JSON using <em>JSON.stringify()</em> and 
        printed to standard output.
 
 <b>OPTIONS</b>
        <b>-j</b>, <b>--json</b>
-              Treat the input text as JSON. Input text will be converted to JavaScript objects 
-              using <em>JSON.parse()</em>.
+              Treat the input text as JSON. Input text will be parsed to JavaScript objects 
+              using <em>JSON.parse()</em> before being passed to <em>fn</em>.
 
        <b>-l</b>, <b>--line</b>
-              Process each line of input separately. For each line of standard input, <em>'fn'</em> 
+              Process each line of input separately. For each line of standard input, <em>fn</em> 
               will be invoked for each line encountered, and the result will be written to 
               standard output.
 
