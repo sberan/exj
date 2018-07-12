@@ -1,0 +1,17 @@
+{
+  "description": "command line utility for processing standard input using node",
+  "name": "exj",
+  "version": "1.0.0",
+  "bin": "./index.js",
+  "scripts": {
+    "test": "mocha **/*.spec.js"
+  },
+  "devDependencies": {
+    "mocha": "5.2.0"
+  },
+  "repository": "https://github.com/sberan/exj",
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ]
+}
