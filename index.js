@@ -65,7 +65,7 @@ const
   })
 
 if (showHelp) {
-  process.stderr.write('Usage: ' + readFileSync('./README.md').toString().replace(/<\/?(em|b|pre)>/g, '').match(/SYNOPSIS\n\s*(.*)/)[1])
+  process.stderr.write('Usage: ' + readFileSync(require.resolve('./README.md')).toString().replace(/<\/?(em|b|pre)>/g, '').match(/SYNOPSIS\n\s*(.*)/)[1])
   process.exit(1)
 }
 let fullInput = ''
