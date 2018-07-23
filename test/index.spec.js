@@ -72,18 +72,33 @@ it('should await promises returned from the fn', async () => {
   assert.deepEqual(result.split('\n'), [ 1, 2, 3 ])
 })
 
-it('should execute the result of fn', async () => {
-  const result = await xj('-jlx', '({a}) => `echo ${a}`')`
-    { "a": 1 }
-    { "a": 2 }
-    { "a": 3 }
-  `
-  assert.deepEqual(result.split('\n'), [ 1, 2, 3 ])
+describe('result execution', () => {
+  it('should execute the result of fn', async () => {
+    const result = await xj('-jlx', '({a}) => ["echo", a]')`
+      { "a": 1 }
+      { "a": 2 }
+      { "a": 3 }
+    `
+    assert.deepEqual(result.split('\n'), [ 1, 2, 3 ])
+  })
+
+  it('should provide an error message if the result is not an array', async () => {
+    try {
+      await xj('-jlx', '({a}) => `echo nope`')`
+        { "a": 1 }
+        { "a": 2 }
+        { "a": 3 }
+      `
+      assert.fail()
+    } catch (err) {
+      assert.equal(err.message.trim(), `Error: result to execute was not an Array: "echo nope"`)
+    }
+  })
 })
 
 it('should provide an error message if `fn` is not a function', async () => {
   try {
-    const result = await xj()``
+    await xj()``
     assert.fail()
   } catch (err) {
     assert.equal(err.message, `Error: 'fn' argument "/Users/samuel.beran/Code/exj/index.js" did not evaluate to a JavaScript function\n${expectedHelpText}`)
@@ -92,7 +107,7 @@ it('should provide an error message if `fn` is not a function', async () => {
 
 it('should provide help text', async () => {
   try {
-    const result = await xj('--help')``
+    await xj('--help')``
     assert.fail()
   } catch (err) {
     assert.equal(err.message.trim(), expectedHelpText)

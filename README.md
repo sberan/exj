@@ -33,8 +33,10 @@
                 result will be written to standard output.
 
          <b>-x</b>, <b>--exec</b>
-                Execute each output line as a child process. The standard output
+                Execute each output entry as a child process. The standard output
                 of the finished process will be written to standard out.
+
+                NOTE: Output entry MUST be an array of the format ['executable', 'arg1', 'arg2', ...]
 
          <b>-f</b>, <b>--file</b> <em>'fnfile'</em>
                 Read <em>fn</em> from a file, whose path is located at <em>'fnfile'</em>.
@@ -51,7 +53,7 @@
          curl https://jsonplaceholder.typicode.com/photos \ | exj -j 'res => res.map((image) => `${image.title} - ${image.thumbnailUrl}`).join('\n')'
                 Fetch and process a JSON payload of album artwork
   
-         ls *.js | exj -lx 'x => `mv "${x}" "${x.replace(/\.js$/, ".ts")}"`'
+         ls *.js | exj -lx 'x => ["mv", "x", x.replace(/\.js$/, ".ts")]'
                 convert javascript files to typescript
   
   <b>SEE ALSO</b>

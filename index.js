@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const readline = require('readline')
-const { exec } = require('child_process')
+const { execFile } = require('child_process')
 const { readFileSync } = require('fs')
 
 function readFn ({ file, text }) {
@@ -38,29 +38,43 @@ const
   groupLinesFlag = hasFlag('-g', '--group-lines'),
   groupLines = groupLinesFlag ? +process.argv[process.argv.indexOf(groupLinesFlag) + 1] : false
   showHelp = hasFlag('--help') || !fn,
-  currentExec = Promise.resolve()
+  lineReader = readline.createInterface({
+    input: process.stdin
+  }),
   sendResult = result => typeof result !== 'string' ? console.log(JSON.stringify(result)) : console.log(result),
+  resultQueue = Promise.resolve(),
+  enqueueResult = (op) => {
+    resultQueue.then(() => {
+      lineReader.pause()
+      return op
+    }).then(result => { 
+      sendResult(result)
+      lineReader.resume()
+    }).catch(err => {
+      console.error('Error:', err.message)
+      process.exit(1)
+    })
+  },
   processText = text => {
     let result = fn(text)
     if (result && result.then && result.catch){
-      result.then(sendResult).catch(err => console.error(err))
+      enqueueResult(result)
     } else if (execResult) {
-      currentExec = currentExec.then(() => new Promise((resolve, reject) => {
-        exec(result, (err, stdout, stderr) => {
+      enqueueResult(new Promise((resolve, reject) => {
+        if (!Array.isArray(result) || !result.length) {
+          throw new Error(`result to execute was not an Array: ${JSON.stringify(result)}`)
+        }
+        execFile(result.shift(), result, (err, stdout, stderr) => {
           stderr && console.error(stderr)
           err ? reject(new Error('process failed: ' + result)) : resolve(stdout.trim())
         })
       }))
-      .then(sendResult).catch(err => console.error(err))
     } else {
       sendResult(result)
     }
   },
   processJson = text => processText(JSON.parse(text)),
-  processInput = json ? processJson :  processText,
-  lineReader = readline.createInterface({
-    input: process.stdin
-  })
+  processInput = json ? processJson : processText
 
 if (showHelp) {
   process.stderr.write('Usage: ' + readFileSync(require.resolve('./README.md')).toString().replace(/<\/?(em|b|pre)>/g, '').match(/SYNOPSIS\n\s*(.*)/)[1])
