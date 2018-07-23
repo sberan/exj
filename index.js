@@ -34,29 +34,27 @@ const
   eachLine = hasFlag('-l', '--line'),
   execResult = hasFlag('-x', '--exec'),
   fnFileArg = hasFlag('-f', '--file'),
-  fn = readFn(fnFileArg ? { file: process.argv[process.argv.indexOf(fnFileArg) + 1]} : { text: process.argv[process.argv.length - 1] })
+  fn = readFn(fnFileArg ? { file: process.argv[process.argv.indexOf(fnFileArg) + 1]} : { text: process.argv[process.argv.length - 1] }),
+  groupLinesFlag = hasFlag('-g', '--group-lines'),
+  groupLines = groupLinesFlag ? +process.argv[process.argv.indexOf(groupLinesFlag) + 1] : false
   showHelp = hasFlag('--help') || !fn,
   currentExec = Promise.resolve()
-  processText = async text => {
+  sendResult = result => typeof result !== 'string' ? console.log(JSON.stringify(result)) : console.log(result),
+  processText = text => {
     let result = fn(text)
-    if (result && result.then){
-      result = await result
-    }
-    if (execResult) {
+    if (result && result.then && result.catch){
+      result.then(sendResult).catch(err => console.error(err))
+    } else if (execResult) {
       currentExec = currentExec.then(() => new Promise((resolve, reject) => {
         exec(result, (err, stdout, stderr) => {
           stderr && console.error(stderr)
           err ? reject(new Error('process failed: ' + result)) : resolve(stdout.trim())
         })
-      })).catch(err => {
-        console.error(err)
-      })
-      result = await currentExec
+      }))
+      .then(sendResult).catch(err => console.error(err))
+    } else {
+      sendResult(result)
     }
-    if (typeof result !== 'string'){
-      result = JSON.stringify(result)
-    }
-    console.log(result)
   },
   processJson = text => processText(JSON.parse(text)),
   processInput = json ? processJson :  processText,
@@ -68,11 +66,24 @@ if (showHelp) {
   process.stderr.write('Usage: ' + readFileSync(require.resolve('./README.md')).toString().replace(/<\/?(em|b|pre)>/g, '').match(/SYNOPSIS\n\s*(.*)/)[1])
   process.exit(1)
 }
-let fullInput = ''
+let fullInput = '',
+  groupedLines = []
+
+function flushGroupedLines () {
+  processInput(json ? '[' + groupedLines.join(',') + ']' : groupedLines)
+  groupedLines = []
+}
 
 lineReader.on('line', line => {
   if (eachLine) {
-    processInput(line)
+    if (groupLines) {
+      groupedLines.push(line)
+      if (groupedLines.length === groupLines) {
+        flushGroupedLines()
+      }
+    } else {
+      processInput(line)
+    }
   } else {
     fullInput += line
   }
@@ -80,6 +91,9 @@ lineReader.on('line', line => {
 
 lineReader.once('close', () => {
   if (eachLine) {
+    if (groupLines && groupedLines.length) {
+      flushGroupedLines()
+    }
     return
   }
   processInput(fullInput)

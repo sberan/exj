@@ -31,13 +31,17 @@
                 Process each line of input separately. For each line of standard
                 input, <em>fn</em> will be invoked for each line encountered, and the
                 result will be written to standard output.
-  
+
          <b>-x</b>, <b>--exec</b>
                 Execute each output line as a child process. The standard output
                 of the finished process will be written to standard out.
 
          <b>-f</b>, <b>--file</b> <em>'fnfile'</em>
                 Read <em>fn</em> from a file, whose path is located at <em>'fnfile'</em>.
+
+         <b>-g</b>, <b>--group-lines</b> <em>'num'</em>
+                When processing lines, group batches of <em>num</em> lines together as an array
+  
   
   <b>EXAMPLES</b>
   

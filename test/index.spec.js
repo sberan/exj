@@ -11,6 +11,9 @@ function xj (...args) {
     const stdin = stdinStrings.join('').split('\n').map(line => line.trim()).filter(line => line.length).join('\n')
     return new Promise((resolve, reject) => {
       const child = execFile(bin, args, (err, stdout, stderr) => {
+        if (!err && stderr && stderr.trim()) {
+          console.error(stderr.trim())
+        }
         err ? reject(new Error(stderr)) : resolve(stdout.trim())
       })
       child.stdin.write(stdin)
@@ -115,5 +118,41 @@ describe('reading from a file', () => {
       3
     `
     assert.deepEqual(result.split('\n'), ["2", "3", "4"])
+  })
+})
+describe('grouping', () => {
+  it('should group lines into an array', async () => {
+    const result = await xj('-lg', '3', 'x => x.map(y => +y + 1).join("")')`
+      1
+      2
+      3
+      4
+      5
+      6
+      7
+      8
+      9
+      10
+      11
+    `
+    assert.equal(result, ['234', '567', '8910', '1112'].join('\n'))
+  })
+
+  it('should group lines of JSON into an array', async () => {
+    const result = await xj('-lj', '--group-lines', '3', 'x => x[0].a')`
+      { "a": 1 }
+      { "a": 2 }
+      { "a": 3 }
+      { "a": 4 }
+      { "a": 5 }
+      { "a": 6 }
+      { "a": 7 }
+      { "a": 8 }
+      { "a": 9 }
+      { "a": 10 }
+      { "a": 11 }
+      { "a": 12 }
+    `
+    assert.equal(result, ['1', '4', '7', '10'].join('\n'))
   })
 })
