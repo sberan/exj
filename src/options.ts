@@ -33,9 +33,12 @@ const
   fn = readFn(fnFileArg ? { file: process.argv[process.argv.indexOf(fnFileArg) + 1]} : { text: fnArg }),
   groupLinesFlag = hasFlag('-g', '--group-lines'),
   groupLines = groupLinesFlag ? +process.argv[process.argv.indexOf(groupLinesFlag) + 1] : undefined,
-  showHelp = hasFlag('--help')
+  showHelp = hasFlag('--help'),
+  concurrencyFlag = hasFlag('-c', '--concurrency'),
+  concurrency = concurrencyFlag ? +process.argv[process.argv.indexOf(concurrencyFlag) + 1] : 1
 
 export default {
+  concurrency,
   eachLine,
   execResult,
   fn,

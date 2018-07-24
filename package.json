@@ -9,7 +9,7 @@
     "start": "node out/index.js",
     "pretest": "npm run compile",
     "test": "mocha -r ts-node/register **/*.spec.ts",
-    "prepublish": "npm test"
+    "prepublishOnly": "npm test"
   },
   "devDependencies": {
     "@types/mocha": "5.2.5",
@@ -28,6 +28,7 @@
   "dependencies": {
     "async-lines": "1.1.0",
     "async-main": "1.0.2",
+    "pool-queue": "2.0.2",
     "tslib": "1.9.3"
   }
 }
