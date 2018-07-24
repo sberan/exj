@@ -4,7 +4,10 @@ import opts from './options'
 import asyncLines from 'async-lines'
 import { execFile } from 'child_process';
 import { readFileSync } from 'fs';
+import { PromiseQueue } from './promise-queue'
 import main from 'async-main'
+
+const processQueue = new PromiseQueue(opts.concurrency)
 
 function isStringArray(x: any): x is string[] {
   return Array.isArray(x) && x.length > 0 && !x.every(item => typeof item === 'string')
@@ -13,9 +16,10 @@ function isStringArray(x: any): x is string[] {
 async function processText (text: string | string[]) {
   let result = opts.fn!(text)
   if (result && result.then && result.catch){
-    result = await result
+    result = await processQueue.append(result)
+    //todo: exit process on error
   } else if (opts.execResult) {
-    result = await new Promise((resolve, reject) => {
+    result = await processQueue.append(new Promise((resolve, reject) => {
       if (!isStringArray(result)) {
         return reject(new Error(`result to execute was not an Array of strings: ${JSON.stringify(result)}`))
       }
@@ -23,7 +27,8 @@ async function processText (text: string | string[]) {
         stderr && console.error(stderr)
         err ? reject(err) : resolve(stdout.trim())
       })
-    })
+    }))
+    //todo: exit process on error
   }
   if (typeof result !== 'string'){
     console.log(JSON.stringify(result))
@@ -58,21 +63,23 @@ main(async () => {
     }
 
   for await (const line of asyncLines(process.stdin)) {
+    await processQueue.poll()
     if (opts.groupLines) {
       groupedLines.push(line)
       if (groupedLines.length === opts.groupLines) {
-        await flushGroupedLines()
+        flushGroupedLines()
       }
     } else if (opts.eachLine) {
-      await processInput(line)
+      processInput(line)
     } else {
       allLines.push(line)
     }
   }
   if (groupedLines.length) {
-    await flushGroupedLines()
+    flushGroupedLines()
   }
   if (!opts.eachLine && !opts.groupLines) {
-    await processInput(allLines.join('\n'))
+    processInput(allLines.join('\n'))
   }
+  await processQueue.drain()
 })
