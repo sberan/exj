@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-const readline = require('readline')
-const { execFile } = require('child_process')
-const { readFileSync } = require('fs')
+import readline from 'readline'
+import { execFile } from 'child_process'
+import { readFileSync } from 'fs'
 
-function readFn ({ file, text }) {
+function readFn ({ file, text }: { file?: string, text?: string }) {
   const fnArg = file ? readFileSync(file).toString() : text
   let fn
   try {
@@ -19,8 +19,12 @@ function readFn ({ file, text }) {
   }
 }
 
+function isStringArray(x: any): x is string[] {
+  return Array.isArray(x) && x.length > 0 && !x.every(item => typeof item === 'string')
+}
+
 const
-  hasFlag = (...flags) => process.argv.find((arg, i) => {
+  hasFlag = (...flags: string[]) => process.argv.find((arg, i) => {
     const shortArgs = arg.match(/^-([a-z]+)$/)
     if (shortArgs) {
       return flags.some(flag => {
@@ -36,14 +40,14 @@ const
   fnFileArg = hasFlag('-f', '--file'),
   fn = readFn(fnFileArg ? { file: process.argv[process.argv.indexOf(fnFileArg) + 1]} : { text: process.argv[process.argv.length - 1] }),
   groupLinesFlag = hasFlag('-g', '--group-lines'),
-  groupLines = groupLinesFlag ? +process.argv[process.argv.indexOf(groupLinesFlag) + 1] : false
+  groupLines = groupLinesFlag ? +process.argv[process.argv.indexOf(groupLinesFlag) + 1] : false,
   showHelp = hasFlag('--help') || !fn,
   lineReader = readline.createInterface({
     input: process.stdin
   }),
-  sendResult = result => typeof result !== 'string' ? console.log(JSON.stringify(result)) : console.log(result),
+  sendResult = (result: string | object) => typeof result !== 'string' ? console.log(JSON.stringify(result)) : console.log(result),
   resultQueue = Promise.resolve(),
-  enqueueResult = (op) => {
+  enqueueResult = (op: Promise<string | object>) => {
     resultQueue.then(() => {
       lineReader.pause()
       return op
@@ -55,36 +59,36 @@ const
       process.exit(1)
     })
   },
-  processText = text => {
+  processText = (text: string | string[]) => {
     let result = fn(text)
     if (result && result.then && result.catch){
       enqueueResult(result)
     } else if (execResult) {
       enqueueResult(new Promise((resolve, reject) => {
-        if (!Array.isArray(result) || !result.length) {
-          throw new Error(`result to execute was not an Array: ${JSON.stringify(result)}`)
+        if (!isStringArray(result)) {
+          return reject(new Error(`result to execute was not an Array of strings: ${JSON.stringify(result)}`))
         }
-        execFile(result.shift(), result, (err, stdout, stderr) => {
+        execFile(result[0], result.slice(1), (err, stdout, stderr) => {
           stderr && console.error(stderr)
-          err ? reject(new Error('process failed: ' + result)) : resolve(stdout.trim())
+          err ? reject(err) : resolve(stdout.trim())
         })
       }))
     } else {
       sendResult(result)
     }
   },
-  processJson = text => processText(JSON.parse(text)),
+  processJson = (text:string) => processText(JSON.parse(text)),
   processInput = json ? processJson : processText
 
 if (showHelp) {
-  process.stderr.write('Usage: ' + readFileSync(require.resolve('./README.md')).toString().replace(/<\/?(em|b|pre)>/g, '').match(/SYNOPSIS\n\s*(.*)/)[1])
+  process.stderr.write('Usage: ' + readFileSync(require.resolve('./README.md')).toString().replace(/<\/?(em|b|pre)>/g, '').match(/SYNOPSIS\n\s*(.*)/)![1])
   process.exit(1)
 }
 let fullInput = '',
-  groupedLines = []
+  groupedLines: string[] = []
 
 function flushGroupedLines () {
-  processInput(json ? '[' + groupedLines.join(',') + ']' : groupedLines)
+  json ? processJson('[' + groupedLines.join(',') + ']') : processText(groupedLines)
   groupedLines = []
 }
 

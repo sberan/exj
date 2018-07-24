@@ -7,7 +7,8 @@
          exj - node.js standard input processor
   
   <b>SYNOPSIS</b>
-         <em>exj</em> [<em>--json</em>] [<em>--line</em>] [<em>--exec</em>] [<em>-jlx</em>] [<em>-f</em> | <em>--file</em> 'fnfile' ] ['fn']
+         <em>exj</em> [<em>--help</em>] [<em>--json</em>] [<em>--line</em>] [<em>--exec</em>] [<em>-jlx</em>] [<em>-g</em> | <em>--group-lines</em> 'num' ] [<em>-f</em> | <em>--file</em> 'fnfile' ] ['fn']
+
   <b>DESCRIPTION</b>
          <em>Exj</em> executes the given <em>fn</em> upon the standard input. <em>Fn</em> is expected to
          be a JavaScript function expression. The result of <em>fn</em> execution is 
@@ -43,8 +44,10 @@
 
          <b>-g</b>, <b>--group-lines</b> <em>'num'</em>
                 When processing lines, group batches of <em>num</em> lines together as an array
-  
-  
+
+          <b>--help</b>
+                Print usage text
+
   <b>EXAMPLES</b>
   
          ls | exj -l 'x => x.toUpperCase()'
@@ -55,7 +58,7 @@
   
          ls *.js | exj -lx 'x => ["mv", "x", x.replace(/\.js$/, ".ts")]'
                 convert javascript files to typescript
-  
+
   <b>SEE ALSO</b>
          <b>awk</b>(1), <b>jq</b>(1), <b>xargs</b>(1)
   

@@ -1,20 +1,31 @@
-const { execFile } = require('child_process')
-const { join } = require('path')
-const assert = require('assert')
-const { bin } = require('../package.json')
-const { mkdtempSync, writeFileSync, unlinkSync, rmdirSync } = require('fs')
+import { execFile } from 'child_process'
+import { join } from 'path'
+import assert from 'assert'
+import { mkdtempSync, writeFileSync, unlinkSync, rmdirSync } from 'fs'
 
-const expectedHelpText = `Usage: exj [--json] [--line] [--exec] [-jlx] [-f | --file 'fnfile' ] ['fn']`
 
-function xj (...args) {
-  return (...stdinStrings) => {
+const { bin }: { bin: string } = require('../package.json')
+
+const expectedHelpText = `Usage: exj [--help] [--json] [--line] [--exec] [-jlx] [-g | --group-lines 'num' ] [-f | --file 'fnfile' ] ['fn']`
+
+function exj (...args: string[]) {
+  args.forEach(arg => {
+    if (arg.startsWith('--')) {
+      assert(expectedHelpText.includes(arg), `unknown flag: ${arg}`)
+    } else if (arg.startsWith('-')) {
+      arg.substring(1).split('').forEach(flag => {
+        assert(expectedHelpText.match(`-[a-z]*${flag}[a-z]*`), `unknown flag: -${flag}`)
+      })
+    }
+  })
+  return (stdinStrings: TemplateStringsArray) => {
     const stdin = stdinStrings.join('').split('\n').map(line => line.trim()).filter(line => line.length).join('\n')
-    return new Promise((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       const child = execFile(bin, args, (err, stdout, stderr) => {
         if (!err && stderr && stderr.trim()) {
           console.error(stderr.trim())
         }
-        err ? reject(new Error(stderr)) : resolve(stdout.trim())
+        err ? reject(stderr ? new Error(stderr) : err) : resolve(stdout ? stdout.trim() : '')
       })
       child.stdin.write(stdin)
       child.stdin.end()
@@ -23,17 +34,17 @@ function xj (...args) {
 }
 
 it('should run the given function', async () => {
-  const result = await xj('() => 42')``
+  const result = await exj('() => 42')``
   assert.equal(result, 42)
 })
 
 it('should process input', async () => {
-  const result = await xj('x => x + " world"')`hello,`
+  const result = await exj('x => x + " world"')`hello,`
   assert.equal(result, 'hello, world')
 })
 
 it('should process input by line', async () => {
-  const result = await xj('-l', 'x => x + x')`
+  const result = await exj('-l', 'x => x + x')`
     a
     b
     c
@@ -44,7 +55,7 @@ it('should process input by line', async () => {
 })
 
 it('should process JSON input', async () => {
-  const result = await xj('--json', 'x => Object.keys(x).concat(Object.values(x))')`
+  const result = await exj('--json', 'x => Object.keys(x).concat(Object.values(x))')`
     {
       "a": 1,
       "b": 2,
@@ -55,7 +66,7 @@ it('should process JSON input', async () => {
 })
 
 it('should process lines of JSON input', async () => {
-  const result = await xj('-jl', '({a}) => a + 1')`
+  const result = await exj('-jl', '({a}) => a + 1')`
     { "a": 1 }
     { "a": 2 }
     { "a": 3 }
@@ -64,7 +75,7 @@ it('should process lines of JSON input', async () => {
 })
 
 it('should await promises returned from the fn', async () => {
-  const result = await xj('--json', '--line', '({a}) => Promise.resolve(a)')`
+  const result = await exj('--json', '--line', '({a}) => Promise.resolve(a)')`
     { "a": 1 }
     { "a": 2 }
     { "a": 3 }
@@ -74,7 +85,7 @@ it('should await promises returned from the fn', async () => {
 
 describe('result execution', () => {
   it('should execute the result of fn', async () => {
-    const result = await xj('-jlx', '({a}) => ["echo", a]')`
+    const result = await exj('-jlx', '({a}) => ["echo", a]')`
       { "a": 1 }
       { "a": 2 }
       { "a": 3 }
@@ -84,22 +95,22 @@ describe('result execution', () => {
 
   it('should provide an error message if the result is not an array', async () => {
     try {
-      await xj('-jlx', '({a}) => `echo nope`')`
+      await exj('-jlx', '({a}) => `echo nope`')`
         { "a": 1 }
         { "a": 2 }
         { "a": 3 }
       `
-      assert.fail()
+      assert.fail('not thrown')
     } catch (err) {
-      assert.equal(err.message.trim(), `Error: result to execute was not an Array: "echo nope"`)
+      assert(err.message.trim(), `Error: result to execute was not an Array of strings: "echo nope"`)
     }
   })
 })
 
 it('should provide an error message if `fn` is not a function', async () => {
   try {
-    await xj()``
-    assert.fail()
+    await exj()``
+    assert.fail('not thrown')
   } catch (err) {
     assert.equal(err.message, `Error: 'fn' argument "/Users/samuel.beran/Code/exj/index.js" did not evaluate to a JavaScript function\n${expectedHelpText}`)
   }
@@ -107,15 +118,15 @@ it('should provide an error message if `fn` is not a function', async () => {
 
 it('should provide help text', async () => {
   try {
-    await xj('--help')``
-    assert.fail()
+    await exj('--help')``
+    assert.fail('not thrown')
   } catch (err) {
     assert.equal(err.message.trim(), expectedHelpText)
   }
 })
 
 describe('reading from a file', () => {
-  let tempDir, tempFile
+  let tempDir: string, tempFile: string
   beforeEach(() => {
     tempDir = mkdtempSync('exj'),
     tempFile = join(tempDir, 'foo.js')
@@ -127,7 +138,7 @@ describe('reading from a file', () => {
   it('should read `fn` from a file', async () => {
     writeFileSync(tempFile, `x => x + 1`)
 
-    const result = await xj('-fjl', tempFile)`
+    const result = await exj('-fjl', tempFile)`
       1
       2
       3
@@ -137,7 +148,7 @@ describe('reading from a file', () => {
 })
 describe('grouping', () => {
   it('should group lines into an array', async () => {
-    const result = await xj('-lg', '3', 'x => x.map(y => +y + 1).join("")')`
+    const result = await exj('-lg', '3', 'x => x.map(y => +y + 1).join("")')`
       1
       2
       3
@@ -154,7 +165,7 @@ describe('grouping', () => {
   })
 
   it('should group lines of JSON into an array', async () => {
-    const result = await xj('-lj', '--group-lines', '3', 'x => x[0].a')`
+    const result = await exj('-lj', '--group-lines', '3', 'x => x[0].a')`
       { "a": 1 }
       { "a": 2 }
       { "a": 3 }
