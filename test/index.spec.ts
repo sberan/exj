@@ -109,10 +109,10 @@ describe('result execution', () => {
 
 it('should provide an error message if `fn` is not a function', async () => {
   try {
-    await exj()``
+    await exj('')``
     assert.fail('not thrown')
   } catch (err) {
-    assert.equal(err.message, `Error: 'fn' argument "/Users/samuel.beran/Code/exj/index.js" did not evaluate to a JavaScript function\n${expectedHelpText}`)
+    assert.equal(err.message, `Error: 'fn' argument "" did not evaluate to a JavaScript function\n${expectedHelpText}`)
   }
 })
 

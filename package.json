@@ -2,9 +2,11 @@
   "description": "command line utility for processing standard input using node",
   "name": "exj",
   "version": "2.0.0",
-  "bin": "./index.js",
+  "bin": "out/index.js",
   "scripts": {
-    "compile": "rimraf out && tsc --outDir out && chmod +x index.js",
+    "compile": "rimraf out && tsc --outDir out && chmod +x out/index.js",
+    "prestart": "npm run compile -q",
+    "start": "node out/index.js",
     "pretest": "npm run compile",
     "test": "mocha -r ts-node/register **/*.spec.ts",
     "prepublish": "npm test"
@@ -15,11 +17,17 @@
     "mocha": "5.2.0",
     "rimraf": "2.6.2",
     "ts-node": "7.0.0",
+    "tslint": "5.11.0",
     "typescript": "2.9.2"
   },
   "repository": "https://github.com/sberan/exj",
   "license": "MIT",
   "files": [
     "out/**/*"
-  ]
+  ],
+  "dependencies": {
+    "async-lines": "1.1.0",
+    "async-main": "1.0.2",
+    "tslib": "1.9.3"
+  }
 }

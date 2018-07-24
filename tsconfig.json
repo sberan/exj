@@ -5,9 +5,13 @@
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "sourceMap": true,
+    "lib": [
+      "es2018"
+    ]
   },
   "include": [
-    "index.ts"
+    "src/**/*.ts"
   ]
 }
