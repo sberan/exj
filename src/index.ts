@@ -3,45 +3,13 @@
 import readline from 'readline'
 import { execFile } from 'child_process'
 import { readFileSync } from 'fs'
-
-function readFn ({ file, text }: { file?: string, text?: string }) {
-  const fnArg = file ? readFileSync(file).toString() : text
-  let fn
-  try {
-    fn = new Function('return ' + fnArg)()
-  } catch (_) {
-  } finally {
-    if (typeof fn !== 'function' && fnArg !== '--help') {
-      console.error(`Error: 'fn' argument "${fnArg}" did not evaluate to a JavaScript function`)
-      return
-    }
-    return fn
-  }
-}
+import opts from './options'
 
 function isStringArray(x: any): x is string[] {
   return Array.isArray(x) && x.length > 0 && !x.every(item => typeof item === 'string')
 }
 
 const
-  hasFlag = (...flags: string[]) => process.argv.find((arg, i) => {
-    const shortArgs = arg.match(/^-([a-z]+)$/)
-    if (shortArgs) {
-      return flags.some(flag => {
-        const shortFlag = flag.match(/^-([a-z]+)$/)
-        return Boolean(shortFlag && shortArgs[1].indexOf(shortFlag[1]) >= 0)
-      })
-    }
-    return flags.some(expect => arg === expect)
-  }),
-  json = hasFlag('-j', '--json'),
-  eachLine = hasFlag('-l', '--line'),
-  execResult = hasFlag('-x', '--exec'),
-  fnFileArg = hasFlag('-f', '--file'),
-  fn = readFn(fnFileArg ? { file: process.argv[process.argv.indexOf(fnFileArg) + 1]} : { text: process.argv[process.argv.length - 1] }),
-  groupLinesFlag = hasFlag('-g', '--group-lines'),
-  groupLines = groupLinesFlag ? +process.argv[process.argv.indexOf(groupLinesFlag) + 1] : false,
-  showHelp = hasFlag('--help') || !fn,
   lineReader = readline.createInterface({
     input: process.stdin
   }),
@@ -60,10 +28,10 @@ const
     })
   },
   processText = (text: string | string[]) => {
-    let result = fn(text)
+    let result = opts.fn!(text)
     if (result && result.then && result.catch){
       enqueueResult(result)
-    } else if (execResult) {
+    } else if (opts.execResult) {
       enqueueResult(new Promise((resolve, reject) => {
         if (!isStringArray(result)) {
           return reject(new Error(`result to execute was not an Array of strings: ${JSON.stringify(result)}`))
@@ -78,9 +46,9 @@ const
     }
   },
   processJson = (text:string) => processText(JSON.parse(text)),
-  processInput = json ? processJson : processText
+  processInput = opts.json ? processJson : processText
 
-if (showHelp) {
+if (opts.showHelp) {
   process.stderr.write('Usage: ' + readFileSync(require.resolve('./README.md')).toString().replace(/<\/?(em|b|pre)>/g, '').match(/SYNOPSIS\n\s*(.*)/)![1])
   process.exit(1)
 }
@@ -88,15 +56,15 @@ let fullInput = '',
   groupedLines: string[] = []
 
 function flushGroupedLines () {
-  json ? processJson('[' + groupedLines.join(',') + ']') : processText(groupedLines)
+  opts.json ? processJson('[' + groupedLines.join(',') + ']') : processText(groupedLines)
   groupedLines = []
 }
 
 lineReader.on('line', line => {
-  if (eachLine) {
-    if (groupLines) {
+  if (opts.eachLine) {
+    if (opts.groupLines) {
       groupedLines.push(line)
-      if (groupedLines.length === groupLines) {
+      if (groupedLines.length === opts.groupLines) {
         flushGroupedLines()
       }
     } else {
@@ -108,8 +76,8 @@ lineReader.on('line', line => {
 })
 
 lineReader.once('close', () => {
-  if (eachLine) {
-    if (groupLines && groupedLines.length) {
+  if (opts.eachLine) {
+    if (opts.groupLines && groupedLines.length) {
       flushGroupedLines()
     }
     return
