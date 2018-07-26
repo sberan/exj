@@ -10,16 +10,18 @@ import PoolQueue from 'pool-queue'
 function isStringArray(x: any): x is string[] {
   return Array.isArray(x) && x.length > 0 && !x.every(item => typeof item === 'string')
 }
-const poolQueue = new PoolQueue(opts.concurrency)
+let poolQueue: PoolQueue | undefined
 
 async function processText (text: string | string[]) {
   let result = opts.fn!(text)
-  if (result && result.then && result.catch){
+  if (result && result.then && result.catch) {
+    poolQueue = poolQueue || new PoolQueue(opts.concurrency)
     result = await poolQueue.submit(() => result).catch(err => {
       console.error(err)
       process.exit(1)
     })
   } else if (opts.execResult) {
+    poolQueue = poolQueue || new PoolQueue(opts.concurrency)
     result = await poolQueue.submit(() => new Promise((resolve, reject) => {
       if (!isStringArray(result)) {
         return reject(new Error(`result to execute was not an Array of strings: ${JSON.stringify(result)}`))
@@ -52,7 +54,9 @@ main(async () => {
     if (!opts.showHelp) {
       console.error(`Error: 'fn' argument "${opts.fnArg}" did not evaluate to a JavaScript function`)
     }
-    process.stderr.write('Usage: ' + readFileSync(require.resolve('../README.md')).toString().replace(/<\/?(em|b|pre)>/g, '').match(/SYNOPSIS\n\s*(.*)/)![1])
+    const readme = readFileSync(require.resolve('../README.md')).toString().replace(/<\/?(em|b|pre)>/g, '')
+    console.error('Usage: ' + readme.match(/SYNOPSIS\n\s*(.*)/)![1])
+    console.error('\n       ' + readme.substring(readme.indexOf(' OPTIONS'), readme.indexOf('EXAMPLES')))
     process.exit(1)
   }
 
@@ -66,7 +70,7 @@ main(async () => {
     }
 
   for await (const line of asyncLines(process.stdin)) {
-    await poolQueue.poll()
+    poolQueue && await poolQueue.poll()
     if (opts.groupLines) {
       groupedLines.push(line)
       if (groupedLines.length === opts.groupLines) {
@@ -84,5 +88,5 @@ main(async () => {
   if (!opts.eachLine && !opts.groupLines) {
     processInput(allLines.join('\n'))
   }
-  await poolQueue.drain()
+  poolQueue && await poolQueue.drain()
 })

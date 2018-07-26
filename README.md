@@ -7,7 +7,7 @@
          exj - node.js standard input processor
   
   <b>SYNOPSIS</b>
-         <em>exj</em> [<em>--help</em>] [<em>--json</em>] [<em>--line</em>] [<em>--exec</em>] [<em>-jlx</em>] [<em>-g</em> | <em>--group-lines</em> 'num' ] [<em>-f</em> | <em>--file</em> 'fnfile' ] ['fn']
+         <em>exj</em> [<em>OPTIONS</em>] [<em>-f</em> | <em>--file</em> 'fnfile' ] ['fn']
 
   <b>DESCRIPTION</b>
          <em>Exj</em> executes the given <em>fn</em> upon the standard input. <em>Fn</em> is expected to
@@ -27,7 +27,7 @@
          <b>-j</b>, <b>--json</b>
                 Treat the input text as JSON. Input text will be parsed to
                 JavaScript objects using <em>JSON.parse()</em> before being passed to <em>fn</em>.
-  
+
          <b>-l</b>, <b>--line</b>
                 Process each line of input separately. For each line of standard
                 input, <em>fn</em> will be invoked for each line encountered, and the
@@ -45,7 +45,13 @@
          <b>-g</b>, <b>--group-lines</b> <em>'num'</em>
                 When processing lines, group batches of <em>num</em> lines together as an array
 
-          <b>--help</b>
+         <b>-c</b>, <b>--concurrency</b> <em>'num'</em>
+                When executing results via <em>--exec</em> option, execute at most <em>num</em>
+                commands at once.
+
+                Also applies to awaiting Promise results.
+
+         <b>--help</b>
                 Print usage text
 
   <b>EXAMPLES</b>

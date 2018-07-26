@@ -6,7 +6,40 @@ import { mkdtempSync, writeFileSync, unlinkSync, rmdirSync } from 'fs'
 
 const { bin }: { bin: string } = require('../package.json')
 
-const expectedHelpText = `Usage: exj [--help] [--json] [--line] [--exec] [-jlx] [-g | --group-lines 'num' ] [-f | --file 'fnfile' ] ['fn']`
+const expectedHelpText = `
+Usage: exj [OPTIONS] [-f | --file 'fnfile' ] ['fn']
+
+        OPTIONS
+         -j, --json
+                Treat the input text as JSON. Input text will be parsed to
+                JavaScript objects using JSON.parse() before being passed to fn.
+
+         -l, --line
+                Process each line of input separately. For each line of standard
+                input, fn will be invoked for each line encountered, and the
+                result will be written to standard output.
+
+         -x, --exec
+                Execute each output entry as a child process. The standard output
+                of the finished process will be written to standard out.
+
+                NOTE: Output entry MUST be an array of the format ['executable', 'arg1', 'arg2', ...]
+
+         -f, --file 'fnfile'
+                Read fn from a file, whose path is located at 'fnfile'.
+
+         -g, --group-lines 'num'
+                When processing lines, group batches of num lines together as an array
+
+         -c, --concurrency 'num'
+                When executing results via --exec option, execute at most num
+                commands at once.
+
+                Also applies to awaiting Promise results.
+
+         --help
+                Print usage text
+`.trim()
 
 function exj (...args: string[]) {
   args.forEach(arg => {
@@ -112,7 +145,7 @@ it('should provide an error message if `fn` is not a function', async () => {
     await exj('')``
     assert.fail('not thrown')
   } catch (err) {
-    assert.equal(err.message, `Error: 'fn' argument "" did not evaluate to a JavaScript function\n${expectedHelpText}`)
+    assert.equal(err.message.trim(), `Error: 'fn' argument "" did not evaluate to a JavaScript function\n${expectedHelpText}`)
   }
 })
 
@@ -180,5 +213,17 @@ describe('grouping', () => {
       { "a": 12 }
     `
     assert.equal(result, ['1', '4', '7', '10'].join('\n'))
+  })
+
+  it('should execute returned promises concurrently', async function() {
+    this.timeout(200)
+    this.retries(3)
+    const result = await exj('-lc', '4', 'x => new Promise(resolve => setTimeout(() => resolve(x), +x))')`
+      80
+      30
+      20
+      100
+    `
+    assert.equal(result, ['80', '30', '20', '100'].join('\n'))
   })
 })
