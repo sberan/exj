@@ -95,7 +95,7 @@ it('should process JSON input', async () => {
       "c": 3
     }
   `
-  assert.deepEqual(JSON.parse(result), [ 'a', 'b', 'c', 1, 2, 3 ])
+  assert.deepStrictEqual(JSON.parse(result), [ 'a', 'b', 'c', 1, 2, 3 ])
 })
 
 it('should process lines of JSON input', async () => {
@@ -104,7 +104,7 @@ it('should process lines of JSON input', async () => {
     { "a": 2 }
     { "a": 3 }
   `
-  assert.deepEqual(result.split('\n'), [ 2, 3, 4 ])
+  assert.deepStrictEqual(result.split('\n'), [ '2', '3', '4' ])
 })
 
 it('should await promises returned from the fn', async () => {
@@ -113,17 +113,40 @@ it('should await promises returned from the fn', async () => {
     { "a": 2 }
     { "a": 3 }
   `
-  assert.deepEqual(result.split('\n'), [ 1, 2, 3 ])
+  assert.deepStrictEqual(result.split('\n'), [ '1', '2', '3' ])
 })
 
 describe('result execution', () => {
+
   it('should execute the result of fn', async () => {
-    const result = await exj('-jlx', '({a}) => ["echo", a]')`
-      { "a": 1 }
-      { "a": 2 }
-      { "a": 3 }
+    const result = await exj('-lx', 'a => ["echo", a]')`
+      1
+      2
+      3
     `
-    assert.deepEqual(result.split('\n'), [ 1, 2, 3 ])
+    assert.deepStrictEqual(result.split('\n'), [ '1', '2', '3' ])
+  })
+  
+  it('should execute the json result of fn', async () => {
+    const result = await exj('-jlx', '({a}) => ["echo", a]')`
+      { "a": "1" }
+      { "a": "2" }
+      { "a": "3" }
+    `
+    assert.deepStrictEqual(result.split('\n'), [ '1', '2', '3' ])
+  })
+
+  it('should execute the result of grouped functions', async () => {
+    const result = await exj('-lxg', '2', 'x => ["echo", x.join("")]')`
+      1
+      2
+      3
+      4
+      5
+      6
+      7
+    `
+    assert.deepStrictEqual(result.split('\n'), [ '12', '34', '56', '7' ])
   })
 
   it('should provide an error message if the result is not an array', async () => {
@@ -176,7 +199,7 @@ describe('reading from a file', () => {
       2
       3
     `
-    assert.deepEqual(result.split('\n'), ["2", "3", "4"])
+    assert.deepStrictEqual(result.split('\n'), ["2", "3", "4"])
   })
 })
 describe('grouping', () => {
@@ -216,14 +239,14 @@ describe('grouping', () => {
   })
 
   it('should execute returned promises concurrently', async function() {
-    this.timeout(200)
+    this.timeout(300)
     this.retries(3)
     const result = await exj('-lc', '4', 'x => new Promise(resolve => setTimeout(() => resolve(x), +x))')`
-      80
-      30
-      20
+      150
+      130
+      120
       100
     `
-    assert.equal(result, ['80', '30', '20', '100'].join('\n'))
+    assert.equal(result, ['150', '130', '120', '100'].join('\n'))
   })
 })

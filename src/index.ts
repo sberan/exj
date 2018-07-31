@@ -8,7 +8,7 @@ import main from 'async-main'
 import PoolQueue from 'pool-queue'
 
 function isStringArray(x: any): x is string[] {
-  return Array.isArray(x) && x.length > 0 && !x.every(item => typeof item === 'string')
+  return Array.isArray(x) && x.length > 0 && x.every(item => typeof item === 'string')
 }
 let poolQueue: PoolQueue | undefined
 
