@@ -7,7 +7,8 @@
          exj - node.js standard input processor
   
   <b>SYNOPSIS</b>
-         <em>exj</em> [<em>OPTIONS</em>] [<em>-f</em> | <em>--file</em> 'fnfile' ] ['fn']
+         <em>exj</em> [<em>OPTIONS</em>] 'fn'
+         <em>exj</em> [<em>OPTIONS</em>] <em>-f</em> | <em>--file</em> 'fnfile'
 
   <b>DESCRIPTION</b>
          <em>Exj</em> executes the given <em>fn</em> upon the standard input. <em>Fn</em> is expected to

@@ -13,7 +13,7 @@ function isStringArray(x: any): x is string[] {
 let poolQueue: PoolQueue | undefined
 
 async function processText (text: string | string[]) {
-  let result = opts.fn!(text)
+  let result = (await opts.fn)!(text)
   if (result && result.then && result.catch) {
     poolQueue = poolQueue || new PoolQueue(opts.concurrency)
     result = await poolQueue.submit(() => result).catch(err => {

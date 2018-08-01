@@ -30,6 +30,7 @@
     "async-lines": "1.1.0",
     "async-main": "1.0.2",
     "getopts": "2.1.2",
+    "global-npm": "0.3.0",
     "pool-queue": "2.0.2"
   }
 }

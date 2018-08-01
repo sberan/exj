@@ -6,7 +6,7 @@ import { mkdtempSync, writeFileSync, unlinkSync, rmdirSync } from 'fs'
 const { bin }: { bin: string } = require('../package.json')
 
 const expectedHelpText = `
-Usage: exj [OPTIONS] [-f | --file 'fnfile' ] ['fn']
+Usage: exj [OPTIONS] 'fn'
 
         OPTIONS
          -j, --json
@@ -266,6 +266,16 @@ describe('grouping', () => {
 
     it('should allow required modules to be aliased', async () => {
       const result = await exj('-l', '--require', 'left-pad:padLeft', 'x => padLeft(x, 3, "0")')`
+        1
+        2
+        3
+        4
+      `
+      assertEqual(result, ['001', '002', '003', '004'].join('\n'))
+    })
+
+    it('should allow missing modules to be installed', async () => {
+      const result = await exj('-l', '--require', 'right-pad', 'x => rightPad(x, 3, "0")')`
         1
         2
         3

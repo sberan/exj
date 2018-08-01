@@ -1,5 +1,8 @@
 import { readFileSync } from 'fs'
-import getOpts from "getopts";
+import { join } from 'path'
+import { homedir } from 'os'
+import getOpts from 'getopts'
+import { resolve } from 'dns';
 
 function boolArg (arg?: string) {
   return Boolean(arg)
@@ -20,24 +23,41 @@ function arrayArg (arg: string | string[] | undefined) {
   return [arg]
 }
 
-function fnArg (text: string | undefined, file: string | undefined, requires: string[]): Function | undefined {
+async function fnArg (text: string | undefined, file: string | undefined, requires: string[]): Promise<Function | undefined> {
   const fnText = file ? readFileSync(file).toString() : text
   try {
     const
-      packages = requires.map(x => x.includes(':') ? x.substring(0, x.indexOf(':')) : x).map(x => require(x)),
+      packageNames = requires.map(x => x.includes(':') ? x.substring(0, x.indexOf(':')) : x),
+      packages = await Promise.all(packageNames.map(async packageName => {
+        try {
+          return require(packageName)
+        } catch (err) {
+          const
+            npm = require('global-npm'),
+            moduleCache = join(homedir(), '.exj_modules')
+          console.log('hi')
+          await new Promise((resolve, reject) => {
+            npm.load({loglevel: 'silent'}, (err: any) => err ? reject(err) : resolve())
+          })
+          console.log('yo')
+          console.error('INSTALL', npm.commands.i)
+        }
+      })),
       pkgImports = requires.map(x => {
         if (x.includes(':')) {
           return x.substring(x.indexOf(':') + 1)
         }
         return x.toLowerCase().replace(/[^a-z]+([a-z])/g, (_,f) => f.toUpperCase())
       })
+    console.log({packages})
     const fn = new Function(...pkgImports, `
       return ${fnText}
     `)(...packages)
     if (typeof fn === 'function') {
       return fn
     }
-  } catch (_) {
+  } catch (err) {
+    console.log(err)
   }
 }
 
