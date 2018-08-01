@@ -7,7 +7,8 @@
          exj - node.js standard input processor
   
   <b>SYNOPSIS</b>
-         <em>exj</em> [<em>OPTIONS</em>] [<em>-f</em> | <em>--file</em> 'fnfile' ] ['fn']
+         <em>exj</em> [<em>OPTIONS</em>] 'fn'
+         <em>exj</em> [<em>OPTIONS</em>] <em>-f</em> | <em>--file</em> 'fnfile'
 
   <b>DESCRIPTION</b>
          <em>Exj</em> executes the given <em>fn</em> upon the standard input. <em>Fn</em> is expected to
@@ -51,7 +52,8 @@
                 When executing results via <em>--exec</em> option, execute at most <em>num</em>
                 commands at once.
 
-                Also applies to awaiting Promise results.
+                Concurrency level also applies to awaiting of Promise results: no more lines
+                of input will be processed while <em>'num'</em> results are in flight.
 
          <b>-r</b>, <b>--require</b> <em>package[:alias]</em>
                 An NPM package to be required into the namespace of 'fn', with optional alias

@@ -2,37 +2,80 @@
 
 import opts from './options'
 import asyncLines from 'async-lines'
-import { execFile } from 'child_process';
-import { readFileSync } from 'fs';
-import main from 'async-main'
+import { execFile, ExecFileOptions } from 'child_process'
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs'
 import PoolQueue from 'pool-queue'
+import { join } from 'path'
+import { homedir } from 'os'
 
 function isStringArray(x: any): x is string[] {
   return Array.isArray(x) && x.length > 0 && x.every(item => typeof item === 'string')
 }
+
 let poolQueue: PoolQueue | undefined
 
-async function processText (text: string | string[]) {
-  let result = opts.fn!(text)
+function execFileAsync(cmd: string, args: string[], options: ExecFileOptions = {}) {
+  return new Promise((resolve, reject) => {
+    execFile(cmd, args, options, (err, stdout, stderr) => {
+      stderr && console.error(stderr)
+      err ? reject(err) : resolve(stdout.trim())
+    })
+  })
+}
+
+async function evalFn (fnText: string): Promise<Function> {
+    const
+      configDir = join(homedir(), '.exj'),
+      packageJson = join(configDir, 'package.json'),
+      resolveFrom = require('resolve-from'),
+      packageNames = opts.requires.map(x => x.includes(':') ? x.substring(0, x.indexOf(':')) : x),
+      packages = await Promise.all(packageNames.map(async packageName => {
+        let pkg = resolveFrom.silent(process.cwd(), packageName)
+        if (!pkg) {
+          pkg = resolveFrom.silent(configDir, packageName)
+        }
+        if (!pkg) {
+          if (!existsSync(configDir)) {
+            mkdirSync(configDir)
+          }
+          if (!existsSync(packageJson)) {
+            writeFileSync(packageJson, '{}')
+          }
+          await execFileAsync('npm', ['i', '--silent', packageName], { cwd: configDir })
+          pkg = resolveFrom(configDir, packageName)
+        }
+        return require(pkg)
+      })),
+      pkgImports = opts.requires.map(x => {
+        if (x.includes(':')) {
+          return x.substring(x.indexOf(':') + 1)
+        }
+        return x.toLowerCase()
+          .replace(/[^a-z]+([a-z])/g, (_,f) => f.toUpperCase())
+          .replace(/^[A-Z]/, x => x.toLowerCase())
+      })
+    const fn = new Function(...pkgImports, `
+      return ${fnText}
+    `)(...packages)
+    if (typeof fn === 'function') {
+      return fn
+    } else {
+      throw `'fn' argument "${fnText}" did not evaluate to a JavaScript function`
+    }
+}
+
+async function processText (text: string | string[], fn: Function) {
+  let result = fn(text)
   if (result && result.then && result.catch) {
     poolQueue = poolQueue || new PoolQueue(opts.concurrency)
-    result = await poolQueue.submit(() => result).catch(err => {
-      console.error(err)
-      process.exit(1)
-    })
+    result = await poolQueue.submit(() => result)
   } else if (opts.execResult) {
     poolQueue = poolQueue || new PoolQueue(opts.concurrency)
-    result = await poolQueue.submit(() => new Promise((resolve, reject) => {
+    result = await poolQueue.submit(async () => {
       if (!isStringArray(result)) {
-        return reject(new Error(`result to execute was not an Array of strings: ${JSON.stringify(result)}`))
+        throw new Error(`result to execute was not an Array of strings: ${JSON.stringify(result)}`)
       }
-      execFile(result[0], result.slice(1), (err, stdout, stderr) => {
-        stderr && console.error(stderr)
-        err ? reject(err) : resolve(stdout.trim())
-      })
-    })).catch(err => {
-      console.error(err)
-      process.exit(1)
+      return execFileAsync(result[0], result.slice(1))
     })
   }
   if (result === null || result === undefined) {
@@ -44,29 +87,41 @@ async function processText (text: string | string[]) {
   }
 }
 
-function processJson (text: string | string[]) {
+function processJson (text: string | string[], fn: Function) {
   if (Array.isArray(text)) {
     text = '[' + text.join(',') + ']'
   }
-  return processText(JSON.parse(text))
+  return processText(JSON.parse(text), fn)
+}
+
+function printErrorAndExit (err: any) {
+  console.error(err.toString())
+  process.exit(1);
+}
+
+async function main(app: () => Promise<any>) {
+  try {
+    await app();
+    process.exit(0);
+  }
+  catch (err) {
+    printErrorAndExit(err)
+  }
 }
 
 main(async () => {
-  if (!opts.fn) {
-    if (!opts.showHelp) {
-      console.error(`Error: 'fn' argument "${opts.fnArg}" did not evaluate to a JavaScript function`)
-    }
+  if (opts.showHelp) {
     const readme = readFileSync(require.resolve('../README.md')).toString().replace(/<\/?(em|b|pre)>/g, '')
-    console.error('Usage: ' + readme.match(/SYNOPSIS\n\s*(.*)/)![1])
-    console.error('\n       ' + readme.substring(readme.indexOf(' OPTIONS'), readme.indexOf('EXAMPLES')))
-    process.exit(1)
+    throw `Usage: ${readme.match(/SYNOPSIS\n\s*(.*)/)![1]}\n
+       ${readme.substring(readme.indexOf(' OPTIONS'), readme.indexOf('EXAMPLES'))}`
   }
-
   const
-    processInput = opts.json ? processJson : processText,
+    fnText = opts.fnFile ? readFileSync(opts.fnFile).toString() : opts.fnText || '',
+    fn = await evalFn(fnText),
+    processInput = (text: string| string[]) => (opts.json ? processJson: processText)(text, fn).catch(printErrorAndExit),
     allLines: string[] = [],
     groupedLines: string[] = [],
-    flushGroupedLines = async () => {
+    flushGroupedLines = () => {
       processInput(groupedLines)
       groupedLines.length = 0
     }
