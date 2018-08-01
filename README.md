@@ -51,6 +51,9 @@
 
                 Also applies to awaiting Promise results.
 
+         <b>-r</b>, <b>--require</b> <em>package[:alias]</em>
+                An NPM package to be required into the namespace of 'fn', with optional alias
+
          <b>--help</b>
                 Print usage text
 
@@ -64,6 +67,9 @@
   
          ls *.js | exj -lx 'x => ["mv", "x", x.replace(/\.js$/, ".ts")]'
                 convert javascript files to typescript
+
+         cat urls.txt -l --concurrency 5 --require 'node-fetch:fetch' 'url => fetch(url).then(r => r.json())'
+                Fetch the json contents of a list of URLs, fetching up to five URLs simultaneously
 
   <b>SEE ALSO</b>
          <b>awk</b>(1), <b>jq</b>(1), <b>xargs</b>(1)

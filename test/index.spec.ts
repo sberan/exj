@@ -1,6 +1,6 @@
 import { execFile } from 'child_process'
 import { join } from 'path'
-import assert from 'assert'
+import { strictEqual as assertEqual, ok as assert, deepStrictEqual as assertDeepEqual, fail } from 'assert'
 import { mkdtempSync, writeFileSync, unlinkSync, rmdirSync } from 'fs'
 
 const { bin }: { bin: string } = require('../package.json')
@@ -36,6 +36,9 @@ Usage: exj [OPTIONS] [-f | --file 'fnfile' ] ['fn']
 
                 Also applies to awaiting Promise results.
 
+         -r, --require package[:alias]
+                An NPM package to be required into the namespace of 'fn', with optional alias
+
          --help
                 Print usage text
 `.trim()
@@ -67,12 +70,12 @@ function exj (...args: string[]) {
 
 it('should run the given function', async () => {
   const result = await exj('() => 42')``
-  assert.equal(result, 42)
+  assertEqual(result, '42')
 })
 
 it('should process input', async () => {
   const result = await exj('x => x + " world"')`hello,`
-  assert.equal(result, 'hello, world')
+  assertEqual(result, 'hello, world')
 })
 
 it('should process input by line', async () => {
@@ -83,7 +86,7 @@ it('should process input by line', async () => {
     d
     e
   `
-  assert.equal(result, ['aa', 'bb', 'cc', 'dd', 'ee'].join('\n'))
+  assertEqual(result, ['aa', 'bb', 'cc', 'dd', 'ee'].join('\n'))
 })
 
 it('should process JSON input', async () => {
@@ -94,7 +97,7 @@ it('should process JSON input', async () => {
       "c": 3
     }
   `
-  assert.deepStrictEqual(JSON.parse(result), [ 'a', 'b', 'c', 1, 2, 3 ])
+  assertDeepEqual(JSON.parse(result), [ 'a', 'b', 'c', 1, 2, 3 ])
 })
 
 it('should process lines of JSON input', async () => {
@@ -103,7 +106,7 @@ it('should process lines of JSON input', async () => {
     { "a": 2 }
     { "a": 3 }
   `
-  assert.deepStrictEqual(result.split('\n'), [ '2', '3', '4' ])
+  assertDeepEqual(result.split('\n'), [ '2', '3', '4' ])
 })
 
 it('should await promises returned from the fn', async () => {
@@ -112,7 +115,7 @@ it('should await promises returned from the fn', async () => {
     { "a": 2 }
     { "a": 3 }
   `
-  assert.deepStrictEqual(result.split('\n'), [ '1', '2', '3' ])
+  assertDeepEqual(result.split('\n'), [ '1', '2', '3' ])
 })
 
 describe('result execution', () => {
@@ -123,7 +126,7 @@ describe('result execution', () => {
       2
       3
     `
-    assert.deepStrictEqual(result.split('\n'), [ '1', '2', '3' ])
+    assertDeepEqual(result.split('\n'), [ '1', '2', '3' ])
   })
   
   it('should execute the json result of fn', async () => {
@@ -132,7 +135,7 @@ describe('result execution', () => {
       { "a": "2" }
       { "a": "3" }
     `
-    assert.deepStrictEqual(result.split('\n'), [ '1', '2', '3' ])
+    assertDeepEqual(result.split('\n'), [ '1', '2', '3' ])
   })
 
   it('should execute the result of grouped functions', async () => {
@@ -145,7 +148,7 @@ describe('result execution', () => {
       6
       7
     `
-    assert.deepStrictEqual(result.split('\n'), [ '12', '34', '56', '7' ])
+    assertDeepEqual(result.split('\n'), [ '12', '34', '56', '7' ])
   })
 
   it('should provide an error message if the result is not an array', async () => {
@@ -155,7 +158,7 @@ describe('result execution', () => {
         { "a": 2 }
         { "a": 3 }
       `
-      assert.fail('not thrown')
+      fail('not thrown')
     } catch (err) {
       assert(err.message.trim(), `Error: result to execute was not an Array of strings: "echo nope"`)
     }
@@ -165,18 +168,18 @@ describe('result execution', () => {
 it('should provide an error message if `fn` is not a function', async () => {
   try {
     await exj('')``
-    assert.fail('not thrown')
+    fail('not thrown')
   } catch (err) {
-    assert.equal(err.message.trim(), `Error: 'fn' argument "" did not evaluate to a JavaScript function\n${expectedHelpText}`)
+    assertEqual(err.message.trim(), `Error: 'fn' argument "" did not evaluate to a JavaScript function\n${expectedHelpText}`)
   }
 })
 
 it('should provide help text', async () => {
   try {
     await exj('--help')``
-    assert.fail('not thrown')
+    fail('not thrown')
   } catch (err) {
-    assert.equal(err.message.trim(), expectedHelpText)
+    assertEqual(err.message.trim(), expectedHelpText)
   }
 })
 
@@ -198,7 +201,7 @@ describe('reading from a file', () => {
       2
       3
     `
-    assert.deepStrictEqual(result.split('\n'), ["2", "3", "4"])
+    assertDeepEqual(result.split('\n'), ["2", "3", "4"])
   })
 })
 describe('grouping', () => {
@@ -216,7 +219,7 @@ describe('grouping', () => {
       10
       11
     `
-    assert.equal(result, ['234', '567', '8910', '1112'].join('\n'))
+    assertEqual(result, ['234', '567', '8910', '1112'].join('\n'))
   })
 
   it('should group lines of JSON into an array', async () => {
@@ -234,7 +237,7 @@ describe('grouping', () => {
       { "a": 11 }
       { "a": 12 }
     `
-    assert.equal(result, ['1', '4', '7', '10'].join('\n'))
+    assertEqual(result, ['1', '4', '7', '10'].join('\n'))
   })
 
   it('should execute returned promises concurrently', async function() {
@@ -246,6 +249,29 @@ describe('grouping', () => {
       120
       100
     `
-    assert.equal(result, ['150', '130', '120', '100'].join('\n'))
+    assertEqual(result, ['150', '130', '120', '100'].join('\n'))
+  })
+
+  describe('requiring modules', () => {
+    it('should allow modules to be required', async () => {
+      const result = await exj('-lr', 'left-pad', 'x => leftPad(x, 3, "0")')`
+        1
+        2
+        3
+        4
+      `
+
+      assertEqual(result, ['001', '002', '003', '004'].join('\n'))
+    })
+
+    it('should allow required modules to be aliased', async () => {
+      const result = await exj('-l', '--require', 'left-pad:padLeft', 'x => padLeft(x, 3, "0")')`
+        1
+        2
+        3
+        4
+      `
+      assertEqual(result, ['001', '002', '003', '004'].join('\n'))
+    })
   })
 })

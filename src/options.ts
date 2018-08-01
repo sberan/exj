@@ -1,10 +1,39 @@
 import { readFileSync } from 'fs'
 import getOpts from "getopts";
 
-function readFn ({ file, text }: { file?: string, text?: string }): Function | undefined {
-  const fnArg = file ? readFileSync(file).toString() : text
+function boolArg (arg?: string) {
+  return Boolean(arg)
+}
+  
+function numArg <T extends number | undefined>(arg: string | undefined, defaultValue: T) {
+  return (arg && !isNaN(+arg)) ? +arg : defaultValue
+}
+
+function arrayArg (arg: string | string[] | undefined) {
+  if (!arg) {
+    return []
+  }
+  if (Array.isArray(arg)) {
+    return arg
+  }
+
+  return [arg]
+}
+
+function fnArg (text: string | undefined, file: string | undefined, requires: string[]): Function | undefined {
+  const fnText = file ? readFileSync(file).toString() : text
   try {
-    const fn = new Function('return ' + fnArg)()
+    const
+      packages = requires.map(x => x.includes(':') ? x.substring(0, x.indexOf(':')) : x).map(x => require(x)),
+      pkgImports = requires.map(x => {
+        if (x.includes(':')) {
+          return x.substring(x.indexOf(':') + 1)
+        }
+        return x.toLowerCase().replace(/[^a-z]+([a-z])/g, (_,f) => f.toUpperCase())
+      })
+    const fn = new Function(...pkgImports, `
+      return ${fnText}
+    `)(...packages)
     if (typeof fn === 'function') {
       return fn
     }
@@ -20,25 +49,28 @@ const opts: { [key: string]: string } = getOpts(process.argv.slice(2), {
     'exec' : 'x',
     'file' : 'f',
     'group-lines' : 'g',
-    'concurrency' : 'c'
+    'concurrency' : 'c',
+    'require' : 'r'
   }
 })
+
+
 const
-  json = Boolean(opts.json),
-  eachLine = Boolean(opts.line),
-  execResult = Boolean(opts.exec),
-  fnArg = opts._,
-  fn = readFn(opts.file ? { file: opts.file } : { text: fnArg }),
-  groupLines = opts['group-lines'] && +opts['group-lines'],
-  showHelp = Boolean(opts.help),
-  concurrency = isNaN(+opts.concurrency) ? 1 : +opts.concurrency
+  fnText = opts._,
+  fn = fnArg(opts._, opts.file, arrayArg(opts.require)),
+  json = boolArg(opts.json),
+  eachLine = boolArg(opts.line),
+  execResult = boolArg(opts.exec),
+  groupLines = numArg(opts['group-lines'], undefined),
+  showHelp = boolArg(opts.help),
+  concurrency = numArg(opts.concurrency, 1)
 
 export default {
   concurrency,
   eachLine,
   execResult,
   fn,
-  fnArg,
+  fnArg: fnText,
   groupLines,
   json,
   showHelp
