@@ -3,7 +3,6 @@ import { join } from 'path'
 import assert from 'assert'
 import { mkdtempSync, writeFileSync, unlinkSync, rmdirSync } from 'fs'
 
-
 const { bin }: { bin: string } = require('../package.json')
 
 const expectedHelpText = `
@@ -194,7 +193,7 @@ describe('reading from a file', () => {
   it('should read `fn` from a file', async () => {
     writeFileSync(tempFile, `x => x + 1`)
 
-    const result = await exj('-fjl', tempFile)`
+    const result = await exj('-jlf', tempFile)`
       1
       2
       3

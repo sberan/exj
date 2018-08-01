@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs'
+import getOpts from "getopts";
 
 function readFn ({ file, text }: { file?: string, text?: string }): Function | undefined {
   const fnArg = file ? readFileSync(file).toString() : text
@@ -11,31 +12,26 @@ function readFn ({ file, text }: { file?: string, text?: string }): Function | u
   }
 }
 
-function hasFlag (...flags: string[]) {
-  return process.argv.find(arg => {
-    const shortArgs = arg.match(/^-([a-z]+)$/)
-    if (shortArgs) {
-      return flags.some(flag => {
-        const shortFlag = flag.match(/^-([a-z]+)$/)
-        return Boolean(shortFlag && shortArgs[1].indexOf(shortFlag[1]) >= 0)
-      })
-    }
-    return flags.some(expect => arg === expect)
-  })
-}
-
+const opts: { [key: string]: string } = getOpts(process.argv.slice(2), {
+  boolean: ['json', 'line', 'exec', 'help'],
+  alias: {
+    'json' : 'j',
+    'line' : 'l',
+    'exec' : 'x',
+    'file' : 'f',
+    'group-lines' : 'g',
+    'concurrency' : 'c'
+  }
+})
 const
-  json = hasFlag('-j', '--json'),
-  eachLine = hasFlag('-l', '--line'),
-  execResult = hasFlag('-x', '--exec'),
-  fnFileArg = hasFlag('-f', '--file'),
-  fnArg = process.argv[process.argv.length - 1],
-  fn = readFn(fnFileArg ? { file: process.argv[process.argv.indexOf(fnFileArg) + 1]} : { text: fnArg }),
-  groupLinesFlag = hasFlag('-g', '--group-lines'),
-  groupLines = groupLinesFlag ? +process.argv[process.argv.indexOf(groupLinesFlag) + 1] : undefined,
-  showHelp = hasFlag('--help'),
-  concurrencyFlag = hasFlag('-c', '--concurrency'),
-  concurrency = concurrencyFlag ? +process.argv[process.argv.indexOf(concurrencyFlag) + 1] : 1
+  json = Boolean(opts.json),
+  eachLine = Boolean(opts.line),
+  execResult = Boolean(opts.exec),
+  fnArg = opts._,
+  fn = readFn(opts.file ? { file: opts.file } : { text: fnArg }),
+  groupLines = opts['group-lines'] && +opts['group-lines'],
+  showHelp = Boolean(opts.help),
+  concurrency = isNaN(+opts.concurrency) ? 1 : +opts.concurrency
 
 export default {
   concurrency,
