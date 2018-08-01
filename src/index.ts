@@ -35,7 +35,9 @@ async function processText (text: string | string[]) {
       process.exit(1)
     })
   }
-  if (typeof result !== 'string'){
+  if (result === null || result === undefined) {
+    return
+  } if (typeof result !== 'string'){
     console.log(JSON.stringify(result))
   } else {
     console.log(result)

@@ -89,6 +89,18 @@ it('should process input by line', async () => {
   assertEqual(result, ['aa', 'bb', 'cc', 'dd', 'ee'].join('\n'))
 })
 
+it('should omit null or undefined results', async () => {
+  const result = await exj('-lj', 'x => x === 3 ? undefined : x')`
+    null
+    2
+    3
+    4
+    null
+    6
+  `
+  assertEqual(result, ['2', '4', '6'].join('\n'))
+})
+
 it('should process JSON input', async () => {
   const result = await exj('--json', 'x => Object.keys(x).concat(Object.values(x))')`
     {

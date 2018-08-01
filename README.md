@@ -17,6 +17,8 @@
          If the result type of <em>fn</em> is a <b>string</b>, the result is printed directly
          to standard output.
         
+         If the result type of <em>fn</em> is <b>null</b> or <b>undefined</b>, no action is taken.
+
          Any other result type is converted to JSON using <em>JSON.stringify()</em> and
          printed to standard output.
   
