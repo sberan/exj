@@ -1,7 +1,7 @@
 {
   "description": "command line utility for processing standard input using node",
   "name": "exj",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "bin": "out/index.js",
   "scripts": {
     "compile": "rimraf out && tsc --outDir out && chmod +x out/index.js",
@@ -30,6 +30,7 @@
     "async-lines": "1.1.0",
     "async-main": "1.0.2",
     "getopts": "2.1.2",
-    "pool-queue": "2.0.2"
+    "pool-queue": "2.0.2",
+    "resolve-from": "4.0.0"
   }
 }

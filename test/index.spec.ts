@@ -1,5 +1,5 @@
 import { execFile } from 'child_process'
-import { join } from 'path'
+import { join, resolve as resolvePath } from 'path'
 import { strictEqual as assertEqual, ok as assert, deepStrictEqual as assertDeepEqual, fail } from 'assert'
 import { mkdtempSync, writeFileSync, unlinkSync, rmdirSync } from 'fs'
 
@@ -56,7 +56,7 @@ function exj (...args: string[]) {
   return (stdinStrings: TemplateStringsArray) => {
     const stdin = stdinStrings.join('').split('\n').map(line => line.trim()).filter(line => line.length).join('\n')
     return new Promise<string>((resolve, reject) => {
-      const child = execFile(bin, args, (err, stdout, stderr) => {
+      const child = execFile(bin, args, { cwd: resolvePath('.') }, (err, stdout, stderr) => {
         if (!err && stderr && stderr.trim()) {
           console.error(stderr.trim())
         }
@@ -265,6 +265,8 @@ describe('grouping', () => {
   })
 
   describe('requiring modules', () => {
+    before(() => writeFileSync('./test.json', '"it works"'))
+    after(() => unlinkSync('./test.json'))
     it('should allow modules to be required', async () => {
       const result = await exj('-lr', 'left-pad', 'x => leftPad(x, 3, "0")')`
         1
@@ -284,6 +286,11 @@ describe('grouping', () => {
         4
       `
       assertEqual(result, ['001', '002', '003', '004'].join('\n'))
+    })
+
+    it('should require relative modules', async () => {
+      const result = await exj('--require', './test.json', '() => testJson')``
+      assertEqual(result, "it works")
     })
   })
 })

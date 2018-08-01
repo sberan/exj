@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
-import getOpts from "getopts";
+import getOpts from "getopts"
+import { resolve as resolvePath } from 'path'
 
 function boolArg (arg?: string) {
   return Boolean(arg)
@@ -24,12 +25,17 @@ function fnArg (text: string | undefined, file: string | undefined, requires: st
   const fnText = file ? readFileSync(file).toString() : text
   try {
     const
-      packages = requires.map(x => x.includes(':') ? x.substring(0, x.indexOf(':')) : x).map(x => require(x)),
+      packages = requires.map(x => x.includes(':') ? x.substring(0, x.indexOf(':')) : x).map(moduleName => {
+        const modulePath = require('resolve-from')(resolvePath('.'), moduleName)
+        return require(modulePath)
+      }),
       pkgImports = requires.map(x => {
         if (x.includes(':')) {
           return x.substring(x.indexOf(':') + 1)
         }
-        return x.toLowerCase().replace(/[^a-z]+([a-z])/g, (_,f) => f.toUpperCase())
+        return x.toLowerCase()
+            .replace(/[^a-z]+([a-z])/g, (_,f) => f.toUpperCase())
+            .replace(/^[A-Z]/, x => x.toLowerCase())
       })
     const fn = new Function(...pkgImports, `
       return ${fnText}
@@ -37,7 +43,8 @@ function fnArg (text: string | undefined, file: string | undefined, requires: st
     if (typeof fn === 'function') {
       return fn
     }
-  } catch (_) {
+  } catch (err) {
+    console.error(err.message)
   }
 }
 
