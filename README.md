@@ -20,7 +20,7 @@
          If the result type of <em>fn</em> is <b>null</b> or <b>undefined</b>, no action is taken.
 
          Any other result type is converted to JSON using <em>JSON.stringify()</em> and
-         printed to standard output.
+         pretty-printed to standard output.
   
          If the result of <em>fn</em> is a <b>Promise</b>, the promise will be resolved and the
          result printed according to the above rules.
@@ -64,10 +64,11 @@
          ls | exj -l 'x => x.toUpperCase()'
                 Print the contents of the current directory in uppercase
   
-         curl https://jsonplaceholder.typicode.com/photos \ | exj -j 'res => res.map((image) => `${image.title} - ${image.thumbnailUrl}`).join('\n')'
-                Fetch and process a JSON payload of album artwork
+         curl https://jsonplaceholder.typicode.com/photos \
+          | exj -j 'res => res.map((image) => `${image.title} - ${image.thumbnailUrl}`).join("\n")' | pbcopy
+                Fetch and process a JSON payload of album artwork to the clipboard
   
-         ls *.js | exj -lx 'x => ["mv", "x", x.replace(/\.js$/, ".ts")]'
+         ls *.js | exj -lx 'x => ["mv", x, x.replace(/\.js$/, ".ts")]'
                 convert javascript files to typescript
 
          cat urls.txt -l --concurrency 5 --require 'node-fetch:fetch' 'url => fetch(url).then(r => r.json())'
