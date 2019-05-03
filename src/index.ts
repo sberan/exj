@@ -122,7 +122,7 @@ main(async () => {
     allLines: string[] = [],
     groupedLines: string[] = [],
     flushGroupedLines = () => {
-      processInput(groupedLines)
+      processInput(groupedLines.slice())
       groupedLines.length = 0
     }
 
