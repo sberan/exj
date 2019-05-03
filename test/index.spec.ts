@@ -257,6 +257,24 @@ describe('grouping', () => {
     `
     assertEqual(result, ['1', '4', '7', '10'].join('\n'))
   })
+
+  it('should not clear input array with asynchronous grouping', async () => {
+    const result = await exj('-lg', '3', 'x => Promise.resolve().then(() => x.join(""))')`
+      1
+      2
+      3
+      4
+      5
+      6
+      7
+      8
+      9
+      10
+      11
+      12
+    `
+    assertEqual(result, ['123', '456', '789', '101112'].join('\n'))
+  })
 })
 
 describe('requiring modules', () => {
