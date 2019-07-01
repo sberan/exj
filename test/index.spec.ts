@@ -177,6 +177,16 @@ describe('result execution', () => {
     assertDeepEqual(result.split('\n'), [ '1', '2', '3' ])
   })
 
+
+  it('should execute a template string', async () => {
+    const result = await exj('-jl', '({a}) => EXEC`echo ${a}`')`
+      { "a": "1" }
+      { "a": "2" }
+      { "a": "3" }
+    `
+    assertDeepEqual(result.split('\n'), [ '1', '2', '3' ])
+  })
+
   it('should execute the result of grouped functions', async () => {
     const result = await exj('-lxg', '2', 'x => ["echo", x.join("")]')`
       1

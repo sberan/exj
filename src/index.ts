@@ -23,6 +23,18 @@ function execFileAsync(cmd: string, args: string[], options: ExecFileOptions = {
   })
 }
 
+function EXEC (strings: TemplateStringsArray, ...replacements: unknown[]) {
+  const opts = strings.reduce((acc: string[], str, i) => {
+    const next = [...acc, ...str.trim().split(/ +/)]
+    if (i >= replacements.length) {
+      return next
+    }
+    const replacement = replacements[i]
+    return next.concat(typeof replacement === 'string' ? replacement : JSON.stringify(replacement))
+  }, [])
+  return execFileAsync(opts[0], opts.slice(1))
+}
+
 async function evalFn (fnText: string): Promise<Function> {
     const
       configDir = join(homedir(), '.exj'),
@@ -54,9 +66,9 @@ async function evalFn (fnText: string): Promise<Function> {
           .replace(/[^a-z]+([a-z])/g, (_,f) => f.toUpperCase())
           .replace(/^[A-Z]/, x => x.toLowerCase())
       })
-    const fn = new Function(...pkgImports, `
+    const fn = new Function(...pkgImports, 'EXEC', `
       return ${fnText}
-    `)(...packages)
+    `)(...packages, EXEC)
     if (typeof fn === 'function') {
       return fn
     } else {

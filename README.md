@@ -25,7 +25,17 @@
   
          If the result of <em>fn</em> is a <b>Promise</b>, the promise will be resolved and the
          result printed according to the above rules.
-  
+
+  <b>GLOBALS</b>
+         <b>EXEC</b>
+                A tagged template string which will execute escape and execute the contents as a child
+                process, similar to running with <em>-x</em>
+
+                EXAMPLE - print all files in the current directory:
+                
+                echo ls | exj -l 'x => EXEC`cat ${x}`'
+
+
   <b>OPTIONS</b>
          <b>-j</b>, <b>--json</b>
                 Treat the input text as JSON. Input text will be parsed to
