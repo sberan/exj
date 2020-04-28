@@ -22,6 +22,7 @@ function arrayArg (arg: string | string[] | undefined) {
 const opts: { [key: string]: string } = getOpts(process.argv.slice(2), {
   boolean: ['json', 'line', 'exec', 'help'],
   alias: {
+    'pretty': 'p',
     'json' : 'j',
     'line' : 'l',
     'exec' : 'x',

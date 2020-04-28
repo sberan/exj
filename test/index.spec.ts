@@ -63,8 +63,8 @@ function exj (...args: string[]) {
         }
         err ? reject(stderr ? new Error(stderr.trim()) : err) : resolve(stdout ? stdout.trim() : '')
       })
-      child.stdin.write(stdin)
-      child.stdin.end()
+      child.stdin?.write(stdin)
+      child.stdin?.end()
     })
   }
 }
@@ -349,7 +349,7 @@ describe('error handilng', () => {
 
   it('should throw for a syntax error in fn', async () => {
     const message = await exjError(' => " ')``
-    assertEqual(message, 'SyntaxError: Unexpected token =>')
+    assertEqual(message, `SyntaxError: Unexpected token '=>'`)
   })
 
   it('should throw for an undefined global in fn', async () => {
