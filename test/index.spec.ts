@@ -13,6 +13,9 @@ Usage: exj [OPTIONS] 'fn'
                 Treat the input text as JSON. Input text will be parsed to
                 JavaScript objects using JSON.parse() before being passed to fn.
 
+         -p, --pretty
+                Pretty print JSON output
+
          -l, --line
                 Process each line of input separately. For each line of standard
                 input, fn will be invoked for each line encountered, and the
@@ -343,8 +346,8 @@ describe('error handilng', () => {
   })
 
   it('should provide an error if fn is not a function', async () => {
-    const message = await exjError()`1`
-    assertEqual(message, `'fn' argument "" did not evaluate to a JavaScript function`)
+    const message = await exjError('void 0')`1`
+    assertEqual(message, `'fn' argument "void 0" did not evaluate to a JavaScript function`)
   })
 
   it('should throw for a syntax error in fn', async () => {

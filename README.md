@@ -41,6 +41,9 @@
                 Treat the input text as JSON. Input text will be parsed to
                 JavaScript objects using <em>JSON.parse()</em> before being passed to <em>fn</em>.
 
+         <b>-p</b>, <b>--pretty</b>
+                Pretty print JSON output
+
          <b>-l</b>, <b>--line</b>
                 Process each line of input separately. For each line of standard
                 input, <em>fn</em> will be invoked for each line encountered, and the
