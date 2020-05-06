@@ -7,6 +7,7 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs'
 import PoolQueue from 'pool-queue'
 import { join } from 'path'
 import { homedir } from 'os'
+import colorize from 'json-colorizer'
 
 function isStringArray(x: any): x is string[] {
   return Array.isArray(x) && x.length > 0 && x.every(item => typeof item === 'string')
@@ -93,7 +94,7 @@ async function processText (text: string | string[], fn: Function) {
   if (result === null || result === undefined) {
     return
   } if (typeof result !== 'string'){
-    console.log(JSON.stringify(result))
+    console.log(colorize(JSON.stringify(result, null, opts.pretty ? 2 : void 0)))
   } else {
     console.log(result)
   }
@@ -128,9 +129,9 @@ main(async () => {
        ${readme.substring(readme.indexOf(' OPTIONS'), readme.indexOf('EXAMPLES'))}`
   }
   const
-    fnText = opts.fnFile ? readFileSync(opts.fnFile).toString() : opts.fnText || '',
+    fnText = opts.fnFile ? readFileSync(opts.fnFile).toString() : opts.fnText,
     fn = await evalFn(fnText),
-    processInput = (text: string| string[]) => (opts.json ? processJson: processText)(text, fn).catch(printErrorAndExit),
+    processInput = (text: string| string[]) => (opts.json ? processJson : processText)(text, fn).catch(printErrorAndExit),
     allLines: string[] = [],
     groupedLines: string[] = [],
     flushGroupedLines = () => {

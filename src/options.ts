@@ -22,6 +22,7 @@ function arrayArg (arg: string | string[] | undefined) {
 const opts: { [key: string]: string } = getOpts(process.argv.slice(2), {
   boolean: ['json', 'line', 'exec', 'help'],
   alias: {
+    'pretty': 'p',
     'json' : 'j',
     'line' : 'l',
     'exec' : 'x',
@@ -32,12 +33,12 @@ const opts: { [key: string]: string } = getOpts(process.argv.slice(2), {
   }
 })
 
-
 const
-  fnText = opts._ || undefined,
+  fnText = opts._.toString() || 'x => x',
   fnFile = opts.file || undefined,
   requires = arrayArg(opts.require),
   json = boolArg(opts.json),
+  pretty = boolArg(opts.pretty),
   eachLine = boolArg(opts.line),
   execResult = boolArg(opts.exec),
   groupLines = numArg(opts['group-lines'], undefined),
@@ -50,6 +51,7 @@ export default {
   execResult,
   fnText,
   fnFile,
+  pretty,
   requires,
   groupLines,
   json,
